@@ -127,7 +127,7 @@ func TestToMetadata(t *testing.T) {
 		},
 	} {
 		t.Run("", func(t *testing.T) {
-			ts := writev2.TimeSeries{Metadata: tc.input}
+			ts := writev2.TimeSeries{Metadata: &tc.input}
 			require.Equal(t, tc.expected, ts.ToMetadata(sym.Symbols()))
 		})
 	}

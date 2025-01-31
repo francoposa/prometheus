@@ -1,0 +1,36 @@
+goos: linux
+goarch: amd64
+pkg: github.com/prometheus/prometheus/storage/remote
+cpu: AMD Ryzen 9 PRO 6950H with Radeon Graphics     
+BenchmarkSampleSend
+BenchmarkSampleSend/prometheus.WriteRequest
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     253	   4852811 ns/op	  851305 B/op	    1137 allocs/op
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     231	   4564053 ns/op	  920690 B/op	    1219 allocs/op
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     258	   4929236 ns/op	  831103 B/op	    1117 allocs/op
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     262	   4706735 ns/op	  821292 B/op	    1096 allocs/op
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     267	   4752723 ns/op	  800966 B/op	    1080 allocs/op
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     230	   4609576 ns/op	  932149 B/op	    1248 allocs/op
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     266	   4934948 ns/op	  808915 B/op	    1084 allocs/op
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     249	   4735399 ns/op	  864441 B/op	    1156 allocs/op
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     262	   4652722 ns/op	  821711 B/op	    1100 allocs/op
+BenchmarkSampleSend/prometheus.WriteRequest-16         	     249	   4918272 ns/op	  864126 B/op	    1155 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     446	   2807968 ns/op	  100503 B/op	     685 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     380	   2846691 ns/op	  117512 B/op	     794 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     448	   2934520 ns/op	  101365 B/op	     682 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     397	   3047680 ns/op	  110964 B/op	     763 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     393	   3028460 ns/op	  110876 B/op	     770 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     372	   2862805 ns/op	  117619 B/op	     810 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     387	   2966232 ns/op	  113997 B/op	     781 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     392	   2932346 ns/op	  114618 B/op	     772 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     409	   3014614 ns/op	  107595 B/op	     742 allocs/op
+BenchmarkSampleSend/io.prometheus.write.v2.Request-16  	     440	   2963502 ns/op	  101902 B/op	     693 allocs/op
+PASS
+ok  	github.com/prometheus/prometheus/storage/remote	32.582s
+PASS
+ok  	github.com/prometheus/prometheus/storage/remote/azuread	0.005s
+?   	github.com/prometheus/prometheus/storage/remote/googleiam	[no test files]
+PASS
+ok  	github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheus	0.005s
+PASS
+ok  	github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite	0.006s

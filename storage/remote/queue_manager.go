@@ -23,7 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	//"github.com/gogo/protobuf/gogoproto"
+	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
@@ -557,7 +558,7 @@ func (t *QueueManager) AppendWatcherMetadata(ctx context.Context, metadata []scr
 		})
 	}
 
-	pBuf := proto.NewBuffer(nil)
+	pBuf := gogoproto.NewBuffer(nil)
 	numSends := int(math.Ceil(float64(len(metadata)) / float64(t.mcfg.MaxSamplesPerSend)))
 	for i := 0; i < numSends; i++ {
 		last := (i + 1) * t.mcfg.MaxSamplesPerSend
@@ -572,7 +573,7 @@ func (t *QueueManager) AppendWatcherMetadata(ctx context.Context, metadata []scr
 	}
 }
 
-func (t *QueueManager) sendMetadataWithBackoff(ctx context.Context, metadata []prompb.MetricMetadata, pBuf *proto.Buffer) error {
+func (t *QueueManager) sendMetadataWithBackoff(ctx context.Context, metadata []prompb.MetricMetadata, pBuf *gogoproto.Buffer) error {
 	// Build the WriteRequest with no samples (v1 flow).
 	req, _, _, err := buildWriteRequest(t.logger, nil, metadata, pBuf, nil, nil, t.enc)
 	if err != nil {
@@ -661,8 +662,8 @@ func isTimeSeriesOldFilter(metrics *queueManagerMetrics, baseTime time.Time, sam
 	}
 }
 
-func isV2TimeSeriesOldFilter(metrics *queueManagerMetrics, baseTime time.Time, sampleAgeLimit time.Duration) func(ts writev2.TimeSeries) bool {
-	return func(ts writev2.TimeSeries) bool {
+func isV2TimeSeriesOldFilter(metrics *queueManagerMetrics, baseTime time.Time, sampleAgeLimit time.Duration) func(ts *writev2.TimeSeries) bool {
+	return func(ts *writev2.TimeSeries) bool {
 		if sampleAgeLimit == 0 {
 			// If sampleAgeLimit is unset, then we never skip samples due to their age.
 			return false
@@ -1500,7 +1501,7 @@ func (s *shards) runShard(ctx context.Context, shardID int, queue *queue) {
 	var (
 		maxCount = s.qm.cfg.MaxSamplesPerSend
 
-		pBuf    = proto.NewBuffer(nil)
+		pBuf    = gogoproto.NewBuffer(nil)
 		pBufRaw []byte
 		buf     []byte
 	)
@@ -1518,9 +1519,11 @@ func (s *shards) runShard(ctx context.Context, shardID int, queue *queue) {
 			pendingData[i].Exemplars = []prompb.Exemplar{{}}
 		}
 	}
-	pendingDataV2 := make([]writev2.TimeSeries, maxCount)
+	pendingDataV2 := make([]*writev2.TimeSeries, maxCount)
 	for i := range pendingDataV2 {
-		pendingDataV2[i].Samples = []writev2.Sample{{}}
+		pendingDataV2[i] = &writev2.TimeSeries{}
+		//pendingDataV2[i].Samples = []*writev2.Sample{}
+		//pendingDataV2[i].Metadata = &writev2.Metadata{}
 	}
 
 	timer := time.NewTimer(time.Duration(s.qm.cfg.BatchSendDeadline))
@@ -1545,7 +1548,8 @@ func (s *shards) runShard(ctx context.Context, shardID int, queue *queue) {
 			}
 			_ = s.sendSamples(ctx, pendingData[:n], nPendingSamples, nPendingExemplars, nPendingHistograms, pBuf, &buf, enc)
 		case config.RemoteWriteProtoMsgV2:
-			nPendingSamples, nPendingExemplars, nPendingHistograms, nPendingMetadata := populateV2TimeSeries(&symbolTable, batch, pendingDataV2, s.qm.sendExemplars, s.qm.sendNativeHistograms)
+			// TODO BUFFER
+			nPendingSamples, nPendingExemplars, nPendingHistograms, nPendingMetadata := populateV2TimeSeries(&symbolTable, batch, pendingDataV2, nil, s.qm.sendExemplars, s.qm.sendNativeHistograms)
 			n := nPendingSamples + nPendingExemplars + nPendingHistograms
 			_ = s.sendV2Samples(ctx, pendingDataV2[:n], symbolTable.Symbols(), nPendingSamples, nPendingExemplars, nPendingHistograms, nPendingMetadata, &pBufRaw, &buf, enc)
 			symbolTable.Reset()
@@ -1636,7 +1640,7 @@ func populateTimeSeries(batch []timeSeries, pendingData []prompb.TimeSeries, sen
 	return nPendingSamples, nPendingExemplars, nPendingHistograms
 }
 
-func (s *shards) sendSamples(ctx context.Context, samples []prompb.TimeSeries, sampleCount, exemplarCount, histogramCount int, pBuf *proto.Buffer, buf *[]byte, enc Compression) error {
+func (s *shards) sendSamples(ctx context.Context, samples []prompb.TimeSeries, sampleCount, exemplarCount, histogramCount int, pBuf *gogoproto.Buffer, buf *[]byte, enc Compression) error {
 	begin := time.Now()
 	rs, err := s.sendSamplesWithBackoff(ctx, samples, sampleCount, exemplarCount, histogramCount, 0, pBuf, buf, enc)
 	s.updateMetrics(ctx, err, sampleCount, exemplarCount, histogramCount, 0, rs, time.Since(begin))
@@ -1645,7 +1649,7 @@ func (s *shards) sendSamples(ctx context.Context, samples []prompb.TimeSeries, s
 
 // TODO(bwplotka): DRY this (have one logic for both v1 and v2).
 // See https://github.com/prometheus/prometheus/issues/14409
-func (s *shards) sendV2Samples(ctx context.Context, samples []writev2.TimeSeries, labels []string, sampleCount, exemplarCount, histogramCount, metadataCount int, pBuf, buf *[]byte, enc Compression) error {
+func (s *shards) sendV2Samples(ctx context.Context, samples []*writev2.TimeSeries, labels []string, sampleCount, exemplarCount, histogramCount, metadataCount int, pBuf, buf *[]byte, enc Compression) error {
 	begin := time.Now()
 	rs, err := s.sendV2SamplesWithBackoff(ctx, samples, labels, sampleCount, exemplarCount, histogramCount, metadataCount, pBuf, buf, enc)
 	s.updateMetrics(ctx, err, sampleCount, exemplarCount, histogramCount, metadataCount, rs, time.Since(begin))
@@ -1689,7 +1693,7 @@ func (s *shards) updateMetrics(_ context.Context, err error, sampleCount, exempl
 }
 
 // sendSamplesWithBackoff to the remote storage with backoff for recoverable errors.
-func (s *shards) sendSamplesWithBackoff(ctx context.Context, samples []prompb.TimeSeries, sampleCount, exemplarCount, histogramCount, metadataCount int, pBuf *proto.Buffer, buf *[]byte, enc Compression) (WriteResponseStats, error) {
+func (s *shards) sendSamplesWithBackoff(ctx context.Context, samples []prompb.TimeSeries, sampleCount, exemplarCount, histogramCount, metadataCount int, pBuf *gogoproto.Buffer, buf *[]byte, enc Compression) (WriteResponseStats, error) {
 	// Build the WriteRequest with no metadata.
 	req, highest, lowest, err := buildWriteRequest(s.qm.logger, samples, nil, pBuf, buf, nil, enc)
 	s.qm.buildRequestLimitTimestamp.Store(lowest)
@@ -1803,9 +1807,9 @@ func (s *shards) sendSamplesWithBackoff(ctx context.Context, samples []prompb.Ti
 }
 
 // sendV2SamplesWithBackoff to the remote storage with backoff for recoverable errors.
-func (s *shards) sendV2SamplesWithBackoff(ctx context.Context, samples []writev2.TimeSeries, labels []string, sampleCount, exemplarCount, histogramCount, metadataCount int, pBuf, buf *[]byte, enc Compression) (WriteResponseStats, error) {
+func (s *shards) sendV2SamplesWithBackoff(ctx context.Context, samples []*writev2.TimeSeries, labels []string, sampleCount, exemplarCount, histogramCount, metadataCount int, pBuf, buf *[]byte, enc Compression) (WriteResponseStats, error) {
 	// Build the WriteRequest with no metadata.
-	req, highest, lowest, err := buildV2WriteRequest(s.qm.logger, samples, labels, pBuf, buf, nil, enc)
+	req, highest, lowest, err := buildV2WriteRequest(s.qm.logger, samples, nil, labels, pBuf, buf, nil, enc) // TODO BUFFER
 	s.qm.buildRequestLimitTimestamp.Store(lowest)
 	if err != nil {
 		// Failing to build the write request is non-recoverable, since it will
@@ -1837,6 +1841,7 @@ func (s *shards) sendV2SamplesWithBackoff(ctx context.Context, samples []writev2
 			req, _, lowest, err := buildV2WriteRequest(
 				s.qm.logger,
 				samples,
+				nil, // TODO BUFFER
 				labels,
 				pBuf,
 				buf,
@@ -1915,11 +1920,14 @@ func (s *shards) sendV2SamplesWithBackoff(ctx context.Context, samples []writev2
 	return accumulatedStats, err
 }
 
-func populateV2TimeSeries(symbolTable *writev2.SymbolsTable, batch []timeSeries, pendingData []writev2.TimeSeries, sendExemplars, sendNativeHistograms bool) (int, int, int, int) {
+func populateV2TimeSeries(symbolTable *writev2.SymbolsTable, batch []timeSeries, pendingData []*writev2.TimeSeries, sampleBuf chan *writev2.Sample, sendExemplars, sendNativeHistograms bool) (int, int, int, int) {
 	var nPendingSamples, nPendingExemplars, nPendingHistograms, nPendingMetadata int
 	for nPending, d := range batch {
 		pendingData[nPending].Samples = pendingData[nPending].Samples[:0]
 		if d.metadata != nil {
+			//if pendingData[nPending].Metadata == nil {
+			//	pendingData[nPending].Metadata = &writev2.Metadata{}
+			//}
 			pendingData[nPending].Metadata.Type = writev2.FromMetadataType(d.metadata.Type)
 			pendingData[nPending].Metadata.HelpRef = symbolTable.Symbolize(d.metadata.Help)
 			pendingData[nPending].Metadata.UnitRef = symbolTable.Symbolize(d.metadata.Unit)
@@ -1927,6 +1935,9 @@ func populateV2TimeSeries(symbolTable *writev2.SymbolsTable, batch []timeSeries,
 		} else {
 			// Safeguard against sending garbage in case of not having metadata
 			// for whatever reason.
+			//if pendingData[nPending].Metadata == nil {
+			//	pendingData[nPending].Metadata = &writev2.Metadata{}
+			//}
 			pendingData[nPending].Metadata.Type = writev2.Metadata_METRIC_TYPE_UNSPECIFIED
 			pendingData[nPending].Metadata.HelpRef = 0
 			pendingData[nPending].Metadata.UnitRef = 0
@@ -1942,16 +1953,14 @@ func populateV2TimeSeries(symbolTable *writev2.SymbolsTable, batch []timeSeries,
 		// Number of pending samples is limited by the fact that sendSamples (via sendSamplesWithBackoff)
 		// retries endlessly, so once we reach max samples, if we can never send to the endpoint we'll
 		// stop reading from the queue. This makes it safe to reference pendingSamples by index.
+		//labelsRefs := symbolTable.SymbolizeLabels(d.seriesLabels, nil)
+		//pendingData[nPending].LabelsRefs = append(pendingData[nPending].LabelsRefs, labelsRefs...)
 		pendingData[nPending].LabelsRefs = symbolTable.SymbolizeLabels(d.seriesLabels, pendingData[nPending].LabelsRefs)
 		switch d.sType {
 		case tSample:
-			pendingData[nPending].Samples = append(pendingData[nPending].Samples, writev2.Sample{
-				Value:     d.value,
-				Timestamp: d.timestamp,
-			})
-			nPendingSamples++
+			nPendingSamples = appendSample(pendingData, sampleBuf, nPending, d, nPendingSamples)
 		case tExemplar:
-			pendingData[nPending].Exemplars = append(pendingData[nPending].Exemplars, writev2.Exemplar{
+			pendingData[nPending].Exemplars = append(pendingData[nPending].Exemplars, &writev2.Exemplar{
 				LabelsRefs: symbolTable.SymbolizeLabels(d.exemplarLabels, nil), // TODO: optimize, reuse slice
 				Value:      d.value,
 				Timestamp:  d.timestamp,
@@ -1969,6 +1978,15 @@ func populateV2TimeSeries(symbolTable *writev2.SymbolsTable, batch []timeSeries,
 		}
 	}
 	return nPendingSamples, nPendingExemplars, nPendingHistograms, nPendingMetadata
+}
+
+func appendSample(pendingData []*writev2.TimeSeries, sampleBuf chan *writev2.Sample, nPending int, d timeSeries, nPendingSamples int) int {
+	sample := <-sampleBuf
+	sample.Value = d.value
+	sample.Timestamp = d.timestamp
+	pendingData[nPending].Samples = append(pendingData[nPending].Samples, sample)
+	nPendingSamples++
+	return nPendingSamples
 }
 
 func (t *QueueManager) sendWriteRequestWithBackoff(ctx context.Context, attempt func(int) error, onRetry func()) error {
@@ -2128,7 +2146,7 @@ func compressPayload(tmpbuf *[]byte, inp []byte, enc Compression) (compressed []
 	}
 }
 
-func buildWriteRequest(logger *slog.Logger, timeSeries []prompb.TimeSeries, metadata []prompb.MetricMetadata, pBuf *proto.Buffer, buf *[]byte, filter func(prompb.TimeSeries) bool, enc Compression) (compressed []byte, highest, lowest int64, _ error) {
+func buildWriteRequest(logger *slog.Logger, timeSeries []prompb.TimeSeries, metadata []prompb.MetricMetadata, pBuf *gogoproto.Buffer, buf *[]byte, filter func(prompb.TimeSeries) bool, enc Compression) (compressed []byte, highest, lowest int64, _ error) {
 	highest, lowest, timeSeries,
 		droppedSamples, droppedExemplars, droppedHistograms := buildTimeSeries(timeSeries, filter)
 
@@ -2142,7 +2160,7 @@ func buildWriteRequest(logger *slog.Logger, timeSeries []prompb.TimeSeries, meta
 	}
 
 	if pBuf == nil {
-		pBuf = proto.NewBuffer(nil) // For convenience in tests. Not efficient.
+		pBuf = gogoproto.NewBuffer(nil) // For convenience in tests. Not efficient.
 	} else {
 		pBuf.Reset()
 	}
@@ -2166,7 +2184,7 @@ func buildWriteRequest(logger *slog.Logger, timeSeries []prompb.TimeSeries, meta
 	return compressed, highest, lowest, nil
 }
 
-func buildV2WriteRequest(logger *slog.Logger, samples []writev2.TimeSeries, labels []string, pBuf, buf *[]byte, filter func(writev2.TimeSeries) bool, enc Compression) (compressed []byte, highest, lowest int64, _ error) {
+func buildV2WriteRequest(logger *slog.Logger, samples []*writev2.TimeSeries, sampleBuf chan *writev2.Sample, labels []string, pBuf, buf *[]byte, filter func(*writev2.TimeSeries) bool, enc Compression) (compressed []byte, highest, lowest int64, _ error) {
 	highest, lowest, timeSeries, droppedSamples, droppedExemplars, droppedHistograms := buildV2TimeSeries(samples, filter)
 
 	if droppedSamples > 0 || droppedExemplars > 0 || droppedHistograms > 0 {
@@ -2175,18 +2193,24 @@ func buildV2WriteRequest(logger *slog.Logger, samples []writev2.TimeSeries, labe
 
 	req := &writev2.Request{
 		Symbols:    labels,
-		Timeseries: timeSeries,
+		Timeseries: samples,
 	}
 
 	if pBuf == nil {
 		pBuf = &[]byte{} // For convenience in tests. Not efficient.
 	}
 
-	data, err := req.OptimizedMarshal(*pBuf)
+	data, err := req.Marshal()
 	if err != nil {
 		return nil, highest, lowest, err
 	}
 	*pBuf = data
+	for _, s := range timeSeries {
+		for _, sample := range s.Samples {
+			//sample.Reset()
+			sampleBuf <- sample
+		}
+	}
 
 	// snappy uses len() to see if it needs to allocate a new slice. Make the
 	// buffer as long as possible.
@@ -2203,7 +2227,7 @@ func buildV2WriteRequest(logger *slog.Logger, samples []writev2.TimeSeries, labe
 	return compressed, highest, lowest, nil
 }
 
-func buildV2TimeSeries(timeSeries []writev2.TimeSeries, filter func(writev2.TimeSeries) bool) (int64, int64, []writev2.TimeSeries, int, int, int) {
+func buildV2TimeSeries(timeSeries []*writev2.TimeSeries, filter func(*writev2.TimeSeries) bool) (int64, int64, []*writev2.TimeSeries, int, int, int) {
 	var highest int64
 	var lowest int64
 	var droppedSamples, droppedExemplars, droppedHistograms int

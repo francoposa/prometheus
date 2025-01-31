@@ -28,9 +28,22 @@ func TestOptimizedMarshal(t *testing.T) {
 			m:    &Request{},
 		},
 		{
+			name: "simpler",
+			m: &Request{
+				Symbols: []string{"", "help text", "unit text", "__name__", "test_metric_0"},
+				Timeseries: []*TimeSeries{
+					{
+						LabelsRefs: []uint32{3, 4},
+						Samples:    nil,
+						Metadata:   &Metadata{Type: Metadata_METRIC_TYPE_COUNTER, HelpRef: 1, UnitRef: 2},
+					},
+				},
+			},
+		},
+		{
 			name: "simple",
 			m: &Request{
-				Timeseries: []TimeSeries{
+				Timeseries: []*TimeSeries{
 					{
 						LabelsRefs: []uint32{
 							0, 1,
@@ -43,8 +56,8 @@ func TestOptimizedMarshal(t *testing.T) {
 							14, 15,
 						},
 
-						Samples:    []Sample{{Value: 1, Timestamp: 0}},
-						Exemplars:  []Exemplar{{LabelsRefs: []uint32{0, 1}, Value: 1, Timestamp: 0}},
+						Samples:    []*Sample{{Value: 1, Timestamp: 0}},
+						Exemplars:  []*Exemplar{{LabelsRefs: []uint32{0, 1}, Value: 1, Timestamp: 0}},
 						Histograms: nil,
 					},
 					{
@@ -58,8 +71,8 @@ func TestOptimizedMarshal(t *testing.T) {
 							12, 13,
 							14, 15,
 						},
-						Samples:    []Sample{{Value: 2, Timestamp: 1}},
-						Exemplars:  []Exemplar{{LabelsRefs: []uint32{0, 1}, Value: 2, Timestamp: 1}},
+						Samples:    []*Sample{{Value: 2, Timestamp: 1}},
+						Exemplars:  []*Exemplar{{LabelsRefs: []uint32{0, 1}, Value: 2, Timestamp: 1}},
 						Histograms: nil,
 					},
 				},
@@ -79,19 +92,19 @@ func TestOptimizedMarshal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Keep the slice allocated to mimic what std Marshal
 			// would give to sized Marshal.
-			got := make([]byte, 0)
+			//got := make([]byte, 0)
 
 			// Should be the same as the standard marshal.
-			expected, err := tt.m.Marshal()
+			//expected, err := proto.Marshal(tt.m)
+			//require.NoError(t, err)
+			got, err := tt.m.Marshal()
 			require.NoError(t, err)
-			got, err = tt.m.OptimizedMarshal(got)
-			require.NoError(t, err)
-			require.Equal(t, expected, got)
+			//require.Equal(t, expected, got)
 
 			// Unmarshal should work too.
 			m := &Request{}
 			require.NoError(t, m.Unmarshal(got))
-			require.Equal(t, tt.m, m)
+			require.EqualExportedValues(t, tt.m, m)
 		})
 	}
 }

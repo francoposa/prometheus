@@ -817,8 +817,8 @@ func createTimeseries(numSamples, numSeries int, extraLabels ...labels.Label) ([
 		for j := 0; j < numSamples; j++ {
 			samples = append(samples, record.RefSample{
 				Ref: chunks.HeadSeriesRef(i),
-				T:   int64(j),
-				V:   float64(i),
+				T:   int64(j + 1),
+				V:   float64(i + 1),
 			})
 		}
 		// Create Labels that is name of series plus any extra labels supplied.
@@ -1146,10 +1146,10 @@ func (c *TestWriteClient) Store(_ context.Context, req []byte, _ int) (WriteResp
 	case config.RemoteWriteProtoMsgV2:
 		// NOTE(bwplotka): v1 msg can be unmarshaled to v2 sometimes, without
 		// errors.
-		var reqProtoV2 writev2.Request
-		err = proto.Unmarshal(reqBuf, &reqProtoV2)
+		reqProtoV2 := &writev2.Request{}
+		err = reqProtoV2.Unmarshal(reqBuf)
 		if err == nil {
-			reqProto, err = v2RequestToWriteRequest(&reqProtoV2)
+			reqProto, err = v2RequestToWriteRequest(reqProtoV2)
 		}
 	}
 	if err != nil {
@@ -1328,7 +1328,7 @@ func BenchmarkSampleSend(b *testing.B) {
 	cfg.MaxShards = 20
 
 	// todo: test with new proto type(s)
-	for _, format := range []config.RemoteWriteProtoMsg{config.RemoteWriteProtoMsgV1, config.RemoteWriteProtoMsgV2} {
+	for _, format := range []config.RemoteWriteProtoMsg{config.RemoteWriteProtoMsgV2} {
 		b.Run(string(format), func(b *testing.B) {
 			m := newTestQueueManager(b, cfg, mcfg, defaultFlushDeadline, c, format)
 			m.StoreSeries(series, 0)
@@ -1900,17 +1900,30 @@ func BenchmarkBuildV2WriteRequest(b *testing.B) {
 	bench := func(b *testing.B, batch []timeSeries) {
 		symbolTable := writev2.NewSymbolTable()
 		buff := make([]byte, 0)
-		seriesBuff := make([]writev2.TimeSeries, len(batch))
+		seriesBuff := make([]*writev2.TimeSeries, len(batch))
 		for i := range seriesBuff {
-			seriesBuff[i].Samples = []writev2.Sample{{}}
-			seriesBuff[i].Exemplars = []writev2.Exemplar{{}}
+			seriesBuff[i] = &writev2.TimeSeries{
+				Metadata:   &writev2.Metadata{},
+				Samples:    []*writev2.Sample{{}},
+				Histograms: []*writev2.Histogram{{}},
+				Exemplars:  []*writev2.Exemplar{{}},
+			}
+			//seriesBuff[i].Samples = []*writev2.Sample{{}}
+			//seriesBuff[i].Exemplars = []*writev2.Exemplar{{}}
 		}
 		pBuf := []byte{}
 
+		sampleBuf := make(chan *writev2.Sample, 32*len(batch))
+		for i := 0; i < cap(sampleBuf); i++ {
+			s := &writev2.Sample{}
+			sampleBuf <- s
+		}
+
 		totalSize := 0
+		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			populateV2TimeSeries(&symbolTable, batch, seriesBuff, true, true)
-			req, _, _, err := buildV2WriteRequest(noopLogger, seriesBuff, symbolTable.Symbols(), &pBuf, &buff, nil, "snappy")
+			populateV2TimeSeries(&symbolTable, batch, seriesBuff, sampleBuf, true, true)
+			req, _, _, err := buildV2WriteRequest(noopLogger, seriesBuff, sampleBuf, symbolTable.Symbols(), &pBuf, &buff, nil, "snappy")
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -1919,18 +1932,18 @@ func BenchmarkBuildV2WriteRequest(b *testing.B) {
 		}
 	}
 
-	twoBatch := createDummyTimeSeries(2)
-	tenBatch := createDummyTimeSeries(10)
+	//twoBatch := createDummyTimeSeries(2)
+	//tenBatch := createDummyTimeSeries(10)
 	hundredBatch := createDummyTimeSeries(100)
 
-	b.Run("2 instances", func(b *testing.B) {
-		bench(b, twoBatch)
-	})
-
-	b.Run("10 instances", func(b *testing.B) {
-		bench(b, tenBatch)
-	})
-
+	//b.Run("2 instances", func(b *testing.B) {
+	//	bench(b, twoBatch)
+	//})
+	//
+	//b.Run("10 instances", func(b *testing.B) {
+	//	bench(b, tenBatch)
+	//})
+	//
 	b.Run("1k instances", func(b *testing.B) {
 		bench(b, hundredBatch)
 	})
