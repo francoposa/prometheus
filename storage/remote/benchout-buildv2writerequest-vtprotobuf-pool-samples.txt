@@ -1,0 +1,47 @@
+goos: linux
+goarch: amd64
+pkg: github.com/prometheus/prometheus/storage/remote
+cpu: AMD Ryzen 9 PRO 6950H with Radeon Graphics     
+BenchmarkBuildV2WriteRequest
+BenchmarkBuildV2WriteRequest/2_instances
+BenchmarkBuildV2WriteRequest/2_instances-16         	   59784	     20099 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/2_instances-16         	   60327	     19889 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/2_instances-16         	   59986	     19831 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/2_instances-16         	   60080	     19755 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/2_instances-16         	   58874	     20027 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/2_instances-16         	   59613	     19635 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/2_instances-16         	   59433	     19819 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/2_instances-16         	   59493	     19683 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/2_instances-16         	   60652	     22968 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/2_instances-16         	   57013	     19861 ns/op	      1517 compressedSize/op	       0 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12721	     95169 ns/op	      5338 compressedSize/op	      14 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12679	     94212 ns/op	      5338 compressedSize/op	      14 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12696	     93996 ns/op	      5338 compressedSize/op	      14 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12625	     94623 ns/op	      5338 compressedSize/op	      15 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12885	     94823 ns/op	      5338 compressedSize/op	      14 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12696	     96167 ns/op	      5338 compressedSize/op	      14 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12586	     93178 ns/op	      5338 compressedSize/op	      15 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12760	     92660 ns/op	      5338 compressedSize/op	      14 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12607	     94255 ns/op	      5338 compressedSize/op	      15 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/10_instances-16        	   12889	     93159 ns/op	      5338 compressedSize/op	      14 B/op	       0 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1246	    936346 ns/op	     48797 compressedSize/op	    1385 B/op	      18 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1212	    932547 ns/op	     48797 compressedSize/op	    1424 B/op	      19 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1234	    927142 ns/op	     48797 compressedSize/op	    1398 B/op	      18 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1252	    920984 ns/op	     48797 compressedSize/op	    1378 B/op	      18 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1240	    933043 ns/op	     48797 compressedSize/op	    1392 B/op	      18 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1257	    957751 ns/op	     48797 compressedSize/op	    1373 B/op	      18 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1240	    935779 ns/op	     48797 compressedSize/op	    1391 B/op	      18 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1245	    937506 ns/op	     48797 compressedSize/op	    1495 B/op	      18 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1238	    920759 ns/op	     48797 compressedSize/op	    1394 B/op	      18 allocs/op
+BenchmarkBuildV2WriteRequest/1k_instances-16        	    1249	    938885 ns/op	     48797 compressedSize/op	    1382 B/op	      18 allocs/op
+PASS
+ok  	github.com/prometheus/prometheus/storage/remote	48.242s
+PASS
+ok  	github.com/prometheus/prometheus/storage/remote/azuread	0.005s
+?   	github.com/prometheus/prometheus/storage/remote/googleiam	[no test files]
+PASS
+ok  	github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheus	0.006s
+PASS
+ok  	github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite	0.006s

@@ -1,0 +1,36 @@
+goos: linux
+goarch: amd64
+pkg: github.com/prometheus/prometheus/storage/remote
+cpu: AMD Ryzen 9 PRO 6950H with Radeon Graphics     
+                                    │ benchout-buildv2writerequest-main.txt │ benchout-buildv2writerequest-vtprotobuf-pool-samples.txt │
+                                    │                sec/op                 │              sec/op               vs base                │
+BuildV2WriteRequest/2_instances-16                              17.81µ ± 4%                        19.85µ ± 1%  +11.43% (p=0.002 n=10)
+BuildV2WriteRequest/10_instances-16                             86.08µ ± 1%                        94.23µ ± 1%   +9.47% (p=0.000 n=10)
+BuildV2WriteRequest/1k_instances-16                             834.6µ ± 1%                        934.4µ ± 1%  +11.96% (p=0.000 n=10)
+geomean                                                         108.6µ                             120.4µ       +10.95%
+
+                                    │ benchout-buildv2writerequest-main.txt │ benchout-buildv2writerequest-vtprotobuf-pool-samples.txt │
+                                    │           compressedSize/op           │        compressedSize/op         vs base                 │
+BuildV2WriteRequest/2_instances-16                              1.517k ± 0%                       1.517k ± 0%       ~ (p=1.000 n=10) ¹
+BuildV2WriteRequest/10_instances-16                             5.338k ± 0%                       5.338k ± 0%       ~ (p=1.000 n=10) ¹
+BuildV2WriteRequest/1k_instances-16                             48.80k ± 0%                       48.80k ± 0%       ~ (p=1.000 n=10) ¹
+geomean                                                         7.338k                            7.338k       +0.00%
+¹ all samples are equal
+
+                                    │ benchout-buildv2writerequest-main.txt │ benchout-buildv2writerequest-vtprotobuf-pool-samples.txt │
+                                    │                 B/op                  │              B/op                vs base                 │
+BuildV2WriteRequest/2_instances-16                             0.000 ± 0%                          0.000 ± 0%       ~ (p=1.000 n=10) ¹
+BuildV2WriteRequest/10_instances-16                            13.50 ± 4%                          14.00 ± 7%  +3.70% (p=0.009 n=10)
+BuildV2WriteRequest/1k_instances-16                          1.280Ki ± 3%                        1.359Ki ± 2%  +6.14% (p=0.000 n=10)
+geomean                                                                   ²                                    +3.25%                ²
+¹ all samples are equal
+² summaries must be >0 to compute geomean
+
+                                    │ benchout-buildv2writerequest-main.txt │ benchout-buildv2writerequest-vtprotobuf-pool-samples.txt │
+                                    │               allocs/op               │           allocs/op             vs base                  │
+BuildV2WriteRequest/2_instances-16                             0.000 ± 0%                         0.000 ± 0%        ~ (p=1.000 n=10) ¹
+BuildV2WriteRequest/10_instances-16                            0.000 ± 0%                         0.000 ± 0%        ~ (p=1.000 n=10) ¹
+BuildV2WriteRequest/1k_instances-16                            14.00 ± 0%                         18.00 ± 0%  +28.57% (p=0.000 n=10)
+geomean                                                                   ²                                    +8.74%                ²
+¹ all samples are equal
+² summaries must be >0 to compute geomean

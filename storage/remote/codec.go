@@ -862,12 +862,12 @@ func DecodeWriteV2Request(r io.Reader) (*writev2.Request, error) {
 		return nil, err
 	}
 
-	var req writev2.Request
-	if err := proto.Unmarshal(reqBuf, &req); err != nil {
+	req := &writev2.Request{}
+	if err := req.UnmarshalVT(reqBuf); err != nil {
 		return nil, err
 	}
 
-	return &req, nil
+	return req, nil
 }
 
 func DecodeOTLPWriteRequest(r *http.Request) (pmetricotlp.ExportRequest, error) {

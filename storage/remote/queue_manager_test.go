@@ -139,9 +139,12 @@ func TestBasicContentNegotiation(t *testing.T) {
 			defer s.Close()
 
 			var (
-				series   []record.RefSeries
-				metadata []record.RefMetadata
-				samples  []record.RefSample
+				series          []record.RefSeries
+				metadata        []record.RefMetadata
+				samples         []record.RefSample
+				exemplars       []record.RefExemplar
+				histograms      []record.RefHistogramSample
+				floatHistograms []record.RefFloatHistogramSample
 			)
 
 			// Generates same series in both cases.
@@ -168,6 +171,9 @@ func TestBasicContentNegotiation(t *testing.T) {
 			// Do we expect some data back?
 			if !tc.expectFail {
 				c.expectSamples(samples, series)
+				c.expectExemplars(exemplars, series)
+				c.expectHistograms(histograms, series)
+				c.expectFloatHistograms(floatHistograms, series)
 			} else {
 				c.expectSamples(nil, nil)
 			}
@@ -1146,10 +1152,10 @@ func (c *TestWriteClient) Store(_ context.Context, req []byte, _ int) (WriteResp
 	case config.RemoteWriteProtoMsgV2:
 		// NOTE(bwplotka): v1 msg can be unmarshaled to v2 sometimes, without
 		// errors.
-		var reqProtoV2 writev2.Request
-		err = proto.Unmarshal(reqBuf, &reqProtoV2)
+		reqProtoV2 := &writev2.Request{}
+		err = reqProtoV2.UnmarshalVT(reqBuf)
 		if err == nil {
-			reqProto, err = v2RequestToWriteRequest(&reqProtoV2)
+			reqProto, err = v2RequestToWriteRequest(reqProtoV2)
 		}
 	}
 	if err != nil {
@@ -1900,10 +1906,14 @@ func BenchmarkBuildV2WriteRequest(b *testing.B) {
 	bench := func(b *testing.B, batch []timeSeries) {
 		symbolTable := writev2.NewSymbolTable()
 		buff := make([]byte, 0)
-		seriesBuff := make([]writev2.TimeSeries, len(batch))
+		seriesBuff := make([]*writev2.TimeSeries, len(batch))
 		for i := range seriesBuff {
-			seriesBuff[i].Samples = []writev2.Sample{{}}
-			seriesBuff[i].Exemplars = []writev2.Exemplar{{}}
+			seriesBuff[i] = &writev2.TimeSeries{
+				Metadata:   &writev2.Metadata{},
+				Samples:    []*writev2.Sample{},
+				Histograms: []*writev2.Histogram{},
+				Exemplars:  []*writev2.Exemplar{},
+			}
 		}
 		pBuf := []byte{}
 
