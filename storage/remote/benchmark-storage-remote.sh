@@ -15,7 +15,7 @@ OUTPUT_FILE=$2
 # Run the benchmark with the specified count and output to the file
 go test \
   -v \
-  -test.bench='^\QBenchmarkBuildV2WriteRequest\E$' \
+  -test.bench=. \
   -test.run='^$' \
   -test.benchmem \
   -test.timeout=60m \
